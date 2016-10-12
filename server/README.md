@@ -1,8 +1,8 @@
 First make a virtual environment for flask development
-$ virtualenv flask_venv
+$ virtualenv env
 
 Now activate the virtual environment
-$ source flask_venv/bin/activate
+$ source env/bin/activate
 
 then install all the requirements using this command
 $ pip install requirements.txt
