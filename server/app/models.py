@@ -51,3 +51,17 @@ class Comment(db.Model):
 
     def __repr__(self):
         return '<Comment %r>' % self.content
+
+class Like(db.Model):
+    id = db.Column(db.Integer, primary_key = True)
+    user_id = db.Column(db.Integer,db.ForeignKey('user.id'))
+    post_id = db.Column(db.Integer,db.ForeignKey('post.id'))
+    comment_id = db.Column(db.Integer,db.ForeignKey('comment.id'))
+
+    def __init__(self, comment_id, post_id):
+        self.user_id = g.user.id
+        self.post_id = post_id
+        self.comment_id = comment_id
+
+    def __repr__(self):
+        return '<Like %r>' % self.id

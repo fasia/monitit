@@ -5,7 +5,7 @@ from wtforms import StringField
 from wtforms.validators import DataRequired
 
 from app.server import db
-from models import User, Post, Comment
+from models import User, Post, Comment, Like
 
 BaseModelForm = model_form_factory(Form)
 
@@ -29,3 +29,7 @@ class PostCreateForm(ModelForm):
 class CommentCreateForm(ModelForm):
     class Meta:
         model = Comment
+
+class LikeCreateForm(ModelForm):
+    class Meta:
+        model = Like
