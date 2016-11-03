@@ -14,8 +14,3 @@ class CommentSerializer(Serializer):
 
     class Meta:
         fields= ("id", "content", "user_id", "post_id")
-
-class LikeSerializer(Serializer):
-
-    class Meta:
-        fields = ("id", "user_id", "post_id", "comment_id")
