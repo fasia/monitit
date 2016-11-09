@@ -30,6 +30,14 @@ class CommentCreateForm(ModelForm):
     class Meta:
         model = Comment
 
-class LikeCreateForm(ModelForm):
+#class LikeCreateForm(ModelForm):
+#    class Meta:
+#        model = Like
+
+class CommentUpdateForm(ModelForm):
     class Meta:
-        model = Like
+        model = Comment
+
+class PostUpdateForm(ModelForm):
+    class Meta:
+        model = Post

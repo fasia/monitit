@@ -105,20 +105,20 @@ def assert_string_list(dist, attr, value):
 
 def check_nsp(dist, attr, value):
     """Verify that namespace packages are valid"""
-    assert_string_list(dist, attr, value)
-    for nsp in value:
+    ns_packages = value
+    assert_string_list(dist, attr, ns_packages)
+    for nsp in ns_packages:
         if not dist.has_contents_for(nsp):
             raise DistutilsSetupError(
                 "Distribution contains no modules or packages for " +
                 "namespace package %r" % nsp
             )
-        if '.' in nsp:
-            parent = '.'.join(nsp.split('.')[:-1])
-            if parent not in value:
-                distutils.log.warn(
-                    "WARNING: %r is declared as a package namespace, but %r"
-                    " is not: please correct this in setup.py", nsp, parent
-                )
+        parent, sep, child = nsp.rpartition('.')
+        if parent and parent not in ns_packages:
+            distutils.log.warn(
+                "WARNING: %r is declared as a package namespace, but %r"
+                " is not: please correct this in setup.py", nsp, parent
+            )
 
 
 def check_extras(dist, attr, value):
@@ -412,7 +412,7 @@ class Distribution(_Distribution):
             )
             for key in list(opts):
                 if key not in keep:
-                    del opts[key]   # don't use any other settings
+                    del opts[key]  # don't use any other settings
             if self.dependency_links:
                 links = self.dependency_links[:]
                 if 'find_links' in opts:
@@ -650,7 +650,7 @@ class Distribution(_Distribution):
         aliases = self.get_option_dict('aliases')
         while command in aliases:
             src, alias = aliases[command]
-            del aliases[command]    # ensure each alias can expand only once!
+            del aliases[command]  # ensure each alias can expand only once!
             import shlex
             args[:1] = shlex.split(alias, True)
             command = args[0]

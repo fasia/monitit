@@ -19,3 +19,8 @@ class LikeSerializer(Serializer):
 
     class Meta:
         fields = ("id", "user_id", "post_id", "comment_id")
+
+class PutSerializer(Serializer):
+
+    class Meta:
+        fields = ("id", "title", "body", "user", "created_at")
