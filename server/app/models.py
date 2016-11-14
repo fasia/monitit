@@ -2,7 +2,7 @@ from flask import g
 
 from wtforms.validators import Email
 
-from server import db, flask_bcrypt
+from app.server import db, flask_bcrypt
 
 
 class User(db.Model):
