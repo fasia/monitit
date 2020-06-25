@@ -1,15 +1,15 @@
 __author__ = 'fsiavash'
 
 from flask import g, request
-from flask.ext import restful, login
-from flask.ext.restful import reqparse
+#from flask.ext import restful, login
+from flask_restful import reqparse, Resource
 
 from flask_restful import abort
-from flask.ext.login import login_user, logout_user, current_user, login_required
+from flask_login import login_user, logout_user, current_user, login_required
 from app.server import api, db, flask_bcrypt, auth
-from app.models import User, Post,Comment
-from app.forms import UserCreateForm, SessionCreateForm, PostCreateForm, CommentCreateForm, CommentUpdateForm, PostUpdateForm, ProfileUpdateForm
-from app.serializers import UserSerializer, PostSerializer, CommentSerializer, PutSerializer
+from app.models import User, Recipe, RecipeItem, Category, Ingredient
+from app.forms import UserCreateForm, SessionCreateForm, RecipeCreateForm, RecipeItemCreateForm, RecipeUpdateForm, RecipeItemUpdateForm, ProfileUpdateForm
+from app.serializers import UserSerializer, RecipeSerializer, user_serializer, users_serializer, recipe_serializer, recipes_serializer
 
 
 @auth.verify_password
@@ -21,7 +21,7 @@ def verify_password(email, password):
     return flask_bcrypt.check_password_hash(user.password, password)
 
 
-class UserView(restful.Resource):
+class UserView(Resource):
     def post(self):
         form = UserCreateForm()
         if not form.validate_on_submit():
@@ -30,14 +30,15 @@ class UserView(restful.Resource):
         user = User(form.email.data, form.password.data)
         db.session.add(user)
         db.session.commit()
-        return UserSerializer(user).data
+        return user_serializer.dump(user)
+        #return UserSerializer(user).data
 
     def delete(self):
         usr = User.query.filter_by(id=user_id).first()
         db.session.delete(usr)
         #return '', 200
 
-class SessionView(restful.Resource):
+class SessionView(Resource):
     def post(self):
         form = SessionCreateForm()
         if not form.validate_on_submit():
@@ -45,10 +46,10 @@ class SessionView(restful.Resource):
 
         user = User.query.filter_by(email=form.email.data).first()
         if user and flask_bcrypt.check_password_hash(user.password, form.password.data):
-            return UserSerializer(user).data, 201
+            return user_serializer.dump(user), 201
         return '', 401
 
-class LogOut(restful.Resource):
+class LogOut(Resource):
     @auth.login_required
     def get(self):
         user = User.query.filter_by(email = g.user.email).first()
@@ -61,54 +62,77 @@ class LogOut(restful.Resource):
         return 200
 
 
-
-class PostListView(restful.Resource):
+class RecipeListView(Resource):
     def get(self):
-        posts = Post.query.all()
-        return PostSerializer(posts, many=True).data
+        recs = Recipe.query.all()
+        return recipes_serializer.dump(recs)
 
     @auth.login_required
     def post(self):
-        form = PostCreateForm()
+        form = RecipeCreateForm()
         if not form.validate_on_submit():
             return form.errors, 422
-        post = Post(form.title.data, form.body.data)
-        db.session.add(post)
+        #recipeitems = form.recipeitems.to_dict()
+        #console.log("recipeitems", recipeitems)
+        print("recipe items",form.recipeitems.data)
+        print("recipe title",form.title.data)
+        print("recipe items list?", request.json['recipeitems'])
+        
+        recipeitems = []
+        for item in request.json['recipeitems']:
+            recitem = RecipeItem(name=item['name'], qty=item['qty'])
+            checking_recipeitem = RecipeItem.query.filter_by(name=recitem.name,qty=recitem.qty).first()
+            if checking_recipeitem is not None:  # the recipe item is already exist
+                # db.session.add(recitem)
+                print("checking rec", checking_recipeitem.qty)
+                print("in if")
+                recipeitems.append(checking_recipeitem)
+            else:  # if the recipe item does not exist
+                print("in else")
+                db.session.add(recitem)
+                recipeitems.append(recitem)
+            print("item", recitem, "added to", recipeitems)
+
+        #rec = Recipe(form.title.data, form.instruction.data, form.price.data, g.user.id, form.recipeitems.data)
+        rec = Recipe(form.title.data, form.instruction.data, form.price.data, g.user.id, recipeitems)
+        db.session.add(rec)
         db.session.commit()
-        return PostSerializer(post).data, 201
+        print("recipe model", rec.recipeitems)
+
+        return recipe_serializer.dump(rec), 201
 
 
-class PostView(restful.Resource):
-    def get(self, id): # manage article 
-        posts = Post.query.filter_by(id=id).first()
-        if posts == None:
+class RecipeView(Resource):
+    def get(self, id): # get recipes 
+        recipe = Recipe.query.filter_by(id=id).first()
+        if recipe == None:
             abort(404)
-        return PostSerializer(posts).data
+        return recipe_serializer.dump(recipe)
 
     @auth.login_required
     def delete(self, id): # delete article
-        post = Post.query.filter_by(id=id).first()
-        if post == None:
+        recipe = Recipe.query.filter_by(id=id).first()
+        if recipe == None:
             abort(404)
-        if  post.user_id != g.user.id:
+        if  recipe.user_id != g.user.id:
             abort(403)
-        db.session.delete(post)
+        db.session.delete(recipe)
         db.session.commit()
 
     @auth.login_required
     def put(self, id):
-        form = PostUpdateForm()
+        form = RecipeUpdateForm()
         if not form.validate_on_submit():
-            return form.errors,422
-        post = Post.query.filter_by(id=id).first()#request.args.get('postid')
-        if post.user_id != g.user.id:
+            return form.errors, 422
+        recipe = Recipe.query.filter_by(id=id).first()#request.args.get('postid')
+        if recipe.user_id != g.user.id:
             abort(403)#,{'message':'You are not the owner of the post! You cannot edit it!'})
-        post.body = form.body.data
-        post.title = form.title.data
+        recipe.instruction = form.instruction.data
+        recipe.title = form.title.data
         db.session.commit()
-        return PostSerializer(post).data, 200
+        return recipe_serializer.load(recipe), 200
 
-class CommentListView(restful.Resource):
+""" class ListView(restful.Resource):
 
     def get(self,postid):
         postComments = Comment.query.filter_by(post_id=postid).all()#request.args.get('postid')
@@ -125,7 +149,7 @@ class CommentListView(restful.Resource):
         comment = Comment(form.content.data, postid)
         db.session.add(comment)
         db.session.commit()
-        return CommentSerializer(comment).data, 201
+        return CommentSerializer(comment).data, 201 
 
 class ManageComment2(restful.Resource):
     #@auth.login_required
@@ -166,13 +190,13 @@ class ManageComment(restful.Resource):
         cmt = Comment.query.filter_by(user_id=userid).all()
                         #request.args.get('postid')
         #print cmt
-        return CommentSerializer(cmt, many=True).data
+        return CommentSerializer(cmt, many=True).data """
 
 
 
 
 
-class UserProfile(restful.Resource):
+class UserProfile(Resource):
     # get likes of a post
     @auth.login_required
     def get(self, userid):
@@ -185,7 +209,7 @@ class UserProfile(restful.Resource):
             print("user ", user.id, " current user ", g.user.id)
             print("You are not athorised to have access to user profile.")
             abort(403)
-        return UserSerializer(user).data, 200
+        return user_serializer.dump(user), 200
 
     @auth.login_required
     def put(self, userid):
@@ -200,7 +224,7 @@ class UserProfile(restful.Resource):
           #  set_password(self, form.password.data)
         db.session.commit()
 
-        return UserSerializer(prof).data, 200
+        return user_serializer.dump(prof), 200
 
 
 
@@ -209,10 +233,10 @@ class UserProfile(restful.Resource):
 
 api.add_resource(UserView, '/api/v1/users')
 api.add_resource(SessionView, '/api/v1/sessions')
-api.add_resource(PostListView, '/api/v1/posts')
-api.add_resource(PostView, '/api/v1/posts/<int:id>')
-api.add_resource(CommentListView, '/api/v1/posts/<int:postid>/comments')
-api.add_resource(ManageComment, '/api/v1/usercomments/<int:userid>')
-api.add_resource(ManageComment2, '/api/v1/comments/<int:commentid>')
+api.add_resource(RecipeListView, '/api/v1/recipes')
+api.add_resource(RecipeView, '/api/v1/recipes/<int:id>')
+#api.add_resource(CommentListView, '/api/v1/posts/<int:postid>/comments')
+#api.add_resource(ManageComment, '/api/v1/usercomments/<int:userid>')
+#api.add_resource(ManageComment2, '/api/v1/comments/<int:commentid>')
 api.add_resource(LogOut, '/api/v1/logout')
 api.add_resource(UserProfile, '/api/v1/profile/<int:userid>')

@@ -1,11 +1,12 @@
-from flask.ext.wtf import Form
+from flask_wtf import Form
 
-from wtforms_alchemy import model_form_factory
+from wtforms_alchemy import model_form_factory, ModelFieldList, ModelFormField
+from wtforms import FormField, FieldList
 from wtforms import StringField
 from wtforms.validators import DataRequired
 
 from app.server import db
-from app.models import User, Post, Comment
+from app.models import User, RecipeItem, Recipe, Category, Ingredient
 
 BaseModelForm = model_form_factory(Form)
 
@@ -22,25 +23,33 @@ class SessionCreateForm(Form):
     email = StringField('name', validators=[DataRequired()])
     password = StringField('password', validators=[DataRequired()])
 
-class PostCreateForm(ModelForm):
+""" class UnitForm(ModelForm):
     class Meta:
-        model = Post
+        model = Unit """
 
-class CommentCreateForm(ModelForm):
+class RecipeItemCreateForm(ModelForm):
     class Meta:
-        model = Comment
+        model = RecipeItem
+    #unit = ModelFormField(UnitForm)
 
+class RecipeCreateForm(ModelForm):
+    class Meta:
+        model = Recipe
+    #recipeitems = ModelFieldList(FormField(RecipeItemCreateForm))
+    recipeitems = ModelFieldList(FormField(RecipeItemCreateForm))
+
+    
 #class LikeCreateForm(ModelForm):
 #    class Meta:
 #        model = Like
 
-class CommentUpdateForm(ModelForm):
+class RecipeUpdateForm(ModelForm):
     class Meta:
-        model = Comment
+        model = Recipe
 
-class PostUpdateForm(ModelForm):
+class RecipeItemUpdateForm(ModelForm):
     class Meta:
-        model = Post
+        model = RecipeItem
 
 class ProfileUpdateForm(ModelForm):
     class Meta:
