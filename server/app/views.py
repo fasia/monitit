@@ -114,7 +114,7 @@ class RecipeView(Resource):
         recipe = Recipe.query.filter_by(id=id).first()
         if recipe == None:
             abort(404)
-        if  recipe.user_id != g.user.id:
+        if  recipe.owner_id != g.user.id:
             abort(403)
         db.session.delete(recipe)
         db.session.commit()
@@ -125,12 +125,39 @@ class RecipeView(Resource):
         if not form.validate_on_submit():
             return form.errors, 422
         recipe = Recipe.query.filter_by(id=id).first()#request.args.get('postid')
-        if recipe.user_id != g.user.id:
+        if recipe.owner_id != g.user.id:
             abort(403)#,{'message':'You are not the owner of the post! You cannot edit it!'})
+
+        rec_itms = []
+        for item in request.json['recipeitems']:
+            recitem = RecipeItem(name=item['name'], qty=item['qty'])
+            checking_recipeitem = RecipeItem.query.filter_by(name=recitem.name,qty=recitem.qty).first()
+            if checking_recipeitem is not None:  # the recipe item is already exist
+                # db.session.add(recitem)
+                print("checking rec", checking_recipeitem.qty)
+                print("in if")
+                rec_itms.append(checking_recipeitem)
+            else:  # if the recipe item does not exist
+                print("in else")
+                db.session.add(recitem)
+                rec_itms.append(recitem)
+            print("item", recitem, "added to", rec_itms)
+
         recipe.instruction = form.instruction.data
         recipe.title = form.title.data
+        recipe.recipeitems = rec_itms
+        recs = form.recipeitems.data
+        print('recs',rec_itms, "in the form", recipe.recipeitems)
+        #recipe.recipeitems = 
         db.session.commit()
-        return recipe_serializer.load(recipe), 200
+        return recipe_serializer.dump(recipe), 200
+
+
+
+class Homeview(Resource):
+    def get(self): # get recipes 
+        return 'Welcome to Wishdish homepage!'
+
 
 """ class ListView(restful.Resource):
 
@@ -230,7 +257,7 @@ class UserProfile(Resource):
 
 
 
-
+api.add_resource(Homeview, '/api/v1/homepage')
 api.add_resource(UserView, '/api/v1/users')
 api.add_resource(SessionView, '/api/v1/sessions')
 api.add_resource(RecipeListView, '/api/v1/recipes')

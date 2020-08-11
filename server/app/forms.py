@@ -43,14 +43,18 @@ class RecipeCreateForm(ModelForm):
 #    class Meta:
 #        model = Like
 
-class RecipeUpdateForm(ModelForm):
-    class Meta:
-        model = Recipe
 
 class RecipeItemUpdateForm(ModelForm):
     class Meta:
         model = RecipeItem
 
+class RecipeUpdateForm(ModelForm):
+    class Meta:
+        model = Recipe
+    
+    recipeitems = ModelFieldList(FormField(RecipeItemUpdateForm))
+
+    
 class ProfileUpdateForm(ModelForm):
     class Meta:
         model = User
